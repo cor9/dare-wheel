@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARE WHEEL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>DARE WHEEL</h1>
+
+        <div class="hero-text">
+            <p>25 dares. One spin. No mercy.</p>
+            <p class="muted">Play solo, or on cam with bros — spins sync to every screen.</p>
+        </div>
+
+        <!-- ============ HOME SCREEN ============ -->
+        <div id="homeScreen" class="screen">
+            <div class="home-actions">
+                <button id="soloBtn" class="btn main-btn">🎯 Spin Solo</button>
+                <div class="panel" style="width:100%">
+                    <h2>🎭 Multiplayer</h2>
+                    <input type="text" id="nameInput" class="text-input name-input" placeholder="Your name" maxlength="16">
+                    <div class="home-actions" style="margin-top:12px">
+                        <button id="hostBtn" class="btn main-btn">🎡 Host a Room</button>
+                        <div class="join-row">
+                            <input type="text" id="joinCodeInput" class="text-input" placeholder="Room code" maxlength="6">
+                            <button id="joinBtn" class="btn main-btn">🚪 Join</button>
+                        </div>
+                        <p id="connectStatus" class="muted"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ LOBBY SCREEN ============ -->
+        <div id="lobbyScreen" class="screen hidden">
+            <div class="panel share-panel">
+                <h2>🔗 Invite Your Bros</h2>
+                <div class="share-row"><span id="shareLink" class="share-link"></span></div>
+                <div class="share-actions">
+                    <button id="copyLinkBtn" class="btn small-btn">Copy</button>
+                    <button id="textLinkBtn" class="btn small-btn">📤 Text It</button>
+                </div>
+            </div>
+            <div id="videoGridLobby" class="video-grid"></div>
+            <div id="lobbyPlayers" class="turn-order"></div>
+            <button id="startGameBtn" class="btn main-btn hidden">🎡 Start Spinning</button>
+            <p id="waitingHostNote" class="muted hidden">Waiting for the host to start…</p>
+            <button id="leaveLobbyBtn" class="btn back-btn">Leave</button>
+        </div>
+
+        <!-- ============ GAME SCREEN ============ -->
+        <div id="gameScreen" class="screen hidden">
+            <div id="videoGridGame" class="video-grid"></div>
+            <div id="turnOrder" class="turn-order"></div>
+
+            <div class="wheel-stage">
+                <div id="wheelContainer" class="wheel-container"></div>
+                <div class="wheel-pointer"></div>
+                <button id="spinBtn" class="btn main-btn spin-btn">🎡 SPIN</button>
+                <p id="waitingSpinnerNote" class="muted hidden"></p>
+            </div>
+
+            <!-- Result overlay -->
+            <div id="resultOverlay" class="result-overlay hidden">
+                <div class="result-card">
+                    <div id="resultNumber" class="result-number"></div>
+                    <p id="resultText" class="result-text"></p>
+                    <div id="timerSection" class="hidden">
+                        <div id="timerDisplay" class="timer-display">0:00</div>
+                        <button id="startTimerBtn" class="btn timer-btn hidden">▶ Start Timer</button>
+                    </div>
+                    <button id="doneBtn" class="btn main-btn hidden">✅ Dare Done — Next Spin</button>
+                    <p id="resultNote" class="muted"></p>
+                </div>
+            </div>
+
+            <button id="quitBtn" class="btn back-btn">Back</button>
+        </div>
+    </div>
+
+    <!-- Media controls -->
+    <div id="mediaBar" class="media-bar hidden">
+        <button id="toggleMicBtn" class="media-btn" title="Toggle mic">🎤</button>
+        <button id="toggleCamBtn" class="media-btn" title="Toggle camera">📷</button>
+    </div>
+
+    <!-- Chat mount point -->
+    <div id="chatRoot"></div>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="spin-wheel.js"></script>
+    <script src="p2p.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
