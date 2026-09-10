@@ -281,7 +281,7 @@ const myRerollsLeft = () => MAX_REROLLS - (S.rerolls[(me() && me().id) || "solo"
 function buildWheel() {
     if (wheel) wheel.remove();
     const theme = activeWheel().theme;
-    wheel = new Wheel($("wheelContainer"), {
+    wheel = new spinWheel.Wheel($("wheelContainer"), {
         items: activeWheel().dares.map((text, i) => ({
             label: String(i + 1),
             weight: 1,
