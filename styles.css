@@ -688,3 +688,93 @@ h1 {
     box-shadow: 0 4px 12px rgba(0, 212, 255, 0.25);
     transform: translateY(-1px);
 }
+
+/* ============ Wheel themes + collection UI ============ */
+:root { --wheel-accent: #00d4ff; }
+
+/* Pointer follows the active wheel's accent */
+.wheel-pointer {
+    border-right-color: var(--wheel-accent);
+    filter: drop-shadow(0 0 8px var(--wheel-accent));
+}
+
+.wheel-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+#wheelName {
+    color: var(--wheel-accent);
+    font-size: 1.15em;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* Result card takes the theme accent */
+.result-card {
+    border-color: var(--wheel-accent);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--wheel-accent) 35%, transparent);
+}
+.result-number { color: var(--wheel-accent); }
+
+/* Wheel picker */
+.wheel-picker-card { max-width: 520px; }
+
+.wheel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.wheel-card {
+    background: linear-gradient(135deg, #3a3a3a 0%, #262626 100%);
+    border: 2px solid #4a4a4a;
+    border-radius: 12px;
+    color: #fff;
+    padding: 16px 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.wheel-card:hover { transform: translateY(-2px); border-color: var(--wheel-accent); }
+
+.wheel-card.active {
+    border-color: var(--wheel-accent);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--wheel-accent) 30%, transparent);
+}
+
+.wheel-card-icon { font-size: 1.8em; }
+.wheel-card-name { font-weight: 700; font-size: 0.85em; }
+.wheel-card-desc { font-size: 0.7em; color: #aaa; }
+
+/* Truth input (re-roll toll) */
+.truth-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid #5a5a5a;
+    border-radius: 10px;
+    color: #fff;
+    padding: 12px 14px;
+    font-size: 0.95em;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    margin-bottom: 14px;
+}
+.truth-input:focus { border-color: var(--wheel-accent); }
+
+/* Big timer */
+#timerSection { margin: 12px 0; }
+.result-card .timer-display {
+    border-color: var(--wheel-accent);
+    color: var(--wheel-accent);
+}

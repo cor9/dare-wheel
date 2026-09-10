@@ -57,6 +57,11 @@
             <div id="videoGridGame" class="video-grid"></div>
             <div id="turnOrder" class="turn-order"></div>
 
+            <div id="wheelBanner" class="wheel-banner">
+                <span id="wheelName"></span>
+                <button id="switchWheelBtn" class="btn small-btn hidden">🔀 Switch Wheel</button>
+            </div>
+
             <div class="wheel-stage">
                 <div id="wheelContainer" class="wheel-container"></div>
                 <div class="wheel-pointer"></div>
@@ -73,8 +78,29 @@
                         <div id="timerDisplay" class="timer-display">0:00</div>
                         <button id="startTimerBtn" class="btn timer-btn hidden">▶ Start Timer</button>
                     </div>
+                    <button id="rerollBtn" class="btn timer-btn hidden">🔄 Re-roll (Juicy Truth Required)</button>
                     <button id="doneBtn" class="btn main-btn hidden">✅ Dare Done — Next Spin</button>
                     <p id="resultNote" class="muted"></p>
+                </div>
+            </div>
+
+            <!-- Truth modal (re-roll cost) -->
+            <div id="truthModal" class="result-overlay hidden">
+                <div class="result-card">
+                    <div class="result-number">🙊 PAY THE TOLL</div>
+                    <p class="result-text">Give the room a juicy truth to earn your re-spin:</p>
+                    <textarea id="truthInput" class="truth-input" rows="3" maxlength="300" placeholder="Spill it…"></textarea>
+                    <button id="submitTruthBtn" class="btn main-btn">🔄 Confess & Re-spin</button>
+                    <button id="cancelTruthBtn" class="btn back-btn">Nvm, I'll Do the Dare</button>
+                </div>
+            </div>
+
+            <!-- Wheel picker modal -->
+            <div id="wheelPicker" class="result-overlay hidden">
+                <div class="result-card wheel-picker-card">
+                    <div class="result-number">🎡 PICK A WHEEL</div>
+                    <div id="wheelGrid" class="wheel-grid"></div>
+                    <button id="closePickerBtn" class="btn back-btn">Cancel</button>
                 </div>
             </div>
 

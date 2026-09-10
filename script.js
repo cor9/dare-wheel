@@ -1,47 +1,251 @@
 /* ============================================================
-   DARE WHEEL — game + network orchestration (p2p.js)
+   DARE WHEEL COLLECTION — 6 wheels x 25 dares
+   P2P cams + chat + synced spins (p2p.js)
    Wheel: spin-wheel by CrazyTim (MIT) — see LICENSE.spin-wheel.txt
    ============================================================ */
 
 const ROOM_PREFIX = "wheel";
+const MAX_REROLLS = 3;
 
 /* ============================================================
-   👉 THE DARE LIST — replace these 25 dares with yours.
-   - label: short text drawn ON the wheel slice (keep ≤ 12 chars)
-   - text:  the full dare shown when the wheel lands
-   - seconds: optional — shows a synced timer after the dare
+   THE WHEELS
    ============================================================ */
-const DARES = [
-    { label: "Dare 1",  text: "DARE 1 — (replace me)", seconds: 0 },
-    { label: "Dare 2",  text: "DARE 2 — (replace me)", seconds: 0 },
-    { label: "Dare 3",  text: "DARE 3 — (replace me)", seconds: 0 },
-    { label: "Dare 4",  text: "DARE 4 — (replace me)", seconds: 0 },
-    { label: "Dare 5",  text: "DARE 5 — (replace me)", seconds: 0 },
-    { label: "Dare 6",  text: "DARE 6 — (replace me)", seconds: 0 },
-    { label: "Dare 7",  text: "DARE 7 — (replace me)", seconds: 0 },
-    { label: "Dare 8",  text: "DARE 8 — (replace me)", seconds: 0 },
-    { label: "Dare 9",  text: "DARE 9 — (replace me)", seconds: 0 },
-    { label: "Dare 10", text: "DARE 10 — (replace me)", seconds: 0 },
-    { label: "Dare 11", text: "DARE 11 — (replace me)", seconds: 0 },
-    { label: "Dare 12", text: "DARE 12 — (replace me)", seconds: 0 },
-    { label: "Dare 13", text: "DARE 13 — (replace me)", seconds: 0 },
-    { label: "Dare 14", text: "DARE 14 — (replace me)", seconds: 0 },
-    { label: "Dare 15", text: "DARE 15 — (replace me)", seconds: 0 },
-    { label: "Dare 16", text: "DARE 16 — (replace me)", seconds: 0 },
-    { label: "Dare 17", text: "DARE 17 — (replace me)", seconds: 0 },
-    { label: "Dare 18", text: "DARE 18 — (replace me)", seconds: 0 },
-    { label: "Dare 19", text: "DARE 19 — (replace me)", seconds: 0 },
-    { label: "Dare 20", text: "DARE 20 — (replace me)", seconds: 0 },
-    { label: "Dare 21", text: "DARE 21 — (replace me)", seconds: 0 },
-    { label: "Dare 22", text: "DARE 22 — (replace me)", seconds: 0 },
-    { label: "Dare 23", text: "DARE 23 — (replace me)", seconds: 0 },
-    { label: "Dare 24", text: "DARE 24 — (replace me)", seconds: 0 },
-    { label: "Dare 25", text: "DARE 25 — (replace me)", seconds: 0 }
+const WHEELS = [
+    {
+        id: "balanced",
+        name: "The Balanced Wheel",
+        icon: "⚖️",
+        desc: "A bit of everything",
+        theme: { accent: "#00d4ff", slices: ["#0e4354", "#1a1a1a", "#142f3a", "#0a3a4a"] },
+        dares: [
+            "Fully naked, slow 360° turn",
+            "Flex! Show off your muscles",
+            "5 naked jumping jacks (on stream)",
+            "Show off 3 pairs of underwear",
+            "Measure your cock girth & length",
+            "Spread your legs wide open and rub your body",
+            "Wank slowly for 30 sec",
+            "Stroke 30 sec, loose grip, medium pace",
+            "Slap your dick against your palm 10x",
+            "Hands behind head — wiggle, shake, windmill",
+            "Wear a sock on your cock and balls, show off on video",
+            "Squat and let your balls touch the floor",
+            "Hump a pillow for 45 sec",
+            "Bate like a monkey for 30 sec",
+            "Sing a song while touching yourself",
+            "Blindfold yourself and sensually wank for 90 seconds",
+            "On all fours, doggy, tongue out, spin around and shake your tail",
+            "5 hard spanks on each butt cheek",
+            "Tie your balls up, then slap 7x (loose, soft cord, max 5 min)",
+            "Edge once with legs in the air",
+            "Edge once while pressing your taint",
+            "Wank on stream for 3 min",
+            "Cum in your hand and eat it",
+            "Choose a dare for another player",
+            "Lucky free roll"
+        ]
+    },
+    {
+        id: "gauntlet",
+        name: "The Edging Gauntlet",
+        icon: "😮‍💨",
+        desc: "Stamina required",
+        theme: { accent: "#ff6b35", slices: ["#3a1c14", "#22100b", "#4a2417", "#1a0d08"] },
+        dares: [
+            "Fully naked, slow 360° turn",
+            "Wank slowly for 30 sec",
+            "Stroke 30 sec, loose grip, medium pace",
+            "Wank with your non-dominant hand for 60 sec",
+            "Sing or recite lyrics while stroking at medium pace",
+            "Blindfold yourself and sensually wank for 90 sec",
+            "Hump a pillow for 45 sec",
+            "Edge once, legs in the air",
+            "Edge once while pressing your taint",
+            "Edge once wearing only socks and a hat",
+            "Slowest possible strokes for 90 sec — if you speed up, restart",
+            "Stop-and-go: 25 strokes, hands off, x5 rounds",
+            "Wank on stream for 3 min",
+            "Hold a plank, naked, for 45 sec",
+            "Edge (slow wank), Edge (fast), Edge (thrusting)",
+            "Squeeze your dick as hard as you can and stroke 30 sec",
+            "Slap your dick against your palm 10x",
+            "Tie your balls up, then slap 7x (loose, soft cord, max 5 min)",
+            "5 hard spanks on each butt cheek",
+            "Show us your fave technique",
+            "Coin flip: heads = double the next dare, tails = re-spin",
+            "Cum in your hand and eat it",
+            "Jerk until you give yourself a facial",
+            "Lucky free roll",
+            "Choose a dare for another player"
+        ]
+    },
+    {
+        id: "clown",
+        name: "The Clown Wheel",
+        icon: "🤡",
+        desc: "Humiliation comedy hour",
+        theme: { accent: "#ffd93d", slices: ["#3a2e0e", "#241c08", "#3d2f66", "#1c1531"] },
+        dares: [
+            "Wear a sock on your cock and balls, show off on video",
+            "Bate like a monkey for 30 sec",
+            "On all fours, doggy, tongue out, spin and shake your tail",
+            "Hands behind head — wiggle, shake, windmill",
+            "5 naked jumping jacks on stream",
+            "Flex! Show off your muscles",
+            "Sing a song while touching yourself",
+            "5 hard spanks on each butt cheek",
+            "Squat and let your balls touch the floor",
+            "Show off your pits, then lick them",
+            "Hump a pillow for 45 sec",
+            "Underwear on head til the game is over",
+            "Deepthroat a banana for 30 sec, no hands",
+            "Winner instructs you to write something on your body",
+            "Hold an ice cube on your balls until it melts",
+            "Measure your penis",
+            "Truth: most embarrassing boner story, told in detail",
+            "Wank slowly for 30 sec",
+            "Slap your dick against your palm 10x",
+            "Wank on stream for 3 min",
+            "Goon and drool 60 sec",
+            "Cum in your hand and eat it",
+            "Jerk until you give yourself a facial",
+            "Choose a dare for another player",
+            "Lucky free roll"
+        ]
+    },
+    {
+        id: "sensual",
+        name: "The Sensual Wheel",
+        icon: "🕯️",
+        desc: "Slow, teasing, torturous",
+        theme: { accent: "#ff7bac", slices: ["#3d1626", "#241018", "#4a1a2e", "#1a0c12"] },
+        dares: [
+            "Undress one piece of clothing per 10 strokes, slowly",
+            "Fully naked, slow 360° turn with hands behind your head",
+            "Rub your body all over with lotion or oil, 2 minutes",
+            "Spread your legs wide open and rub your body",
+            "Slowly wank for 60 sec — eyes closed, no sound",
+            "Blindfold yourself and sensually wank for 90 seconds",
+            "Ice cube from your neck, down your chest, to your balls",
+            "Tease just the tip with two fingers for 60 sec",
+            "Stroke your inner thighs and taint only — no touching your dick for 90 sec",
+            "Nipple play: pinch, pull, and roll for 60 sec",
+            "Hump a pillow slowly for 45 sec, no hands",
+            "Wank with your non-dominant hand, slow, for 60 sec",
+            "Edge once with legs in the air, then breathe and hold it",
+            "Edge once while pressing your taint",
+            "Edge once wearing only socks and a hat",
+            "Frenulum rub 60 sec",
+            "Mirror dare: watch yourself in a mirror while wanking 60 sec",
+            "Slowest possible strokes for 90 sec — speed up and you restart",
+            "Stop-and-go: 25 strokes, hands off, x5 rounds",
+            "Dance or sing, as sensually as possible",
+            "Wank on stream for 2 min, build pace from 1 to 10",
+            "Partner picks your tempo for 2 minutes — you may not cum",
+            "Hands-free: thrust into a lubed fist or toy held 60 sec",
+            "Hold the edge for 30 seconds without moving, three times",
+            "Lucky free roll"
+        ]
+    },
+    {
+        id: "showoff",
+        name: "The Show-Off Wheel",
+        icon: "💪",
+        desc: "Time to perform, big boy",
+        theme: { accent: "#ffc627", slices: ["#33270c", "#1c1606", "#3a2c0e", "#241c08"] },
+        dares: [
+            "Flex! Show off your muscles",
+            "Fully naked, slow 360° turn, tensed the whole time",
+            "5 naked jumping jacks on stream",
+            "10 push-ups, naked, hardest flex at the top of each",
+            "Hands behind head — wiggle, shake, windmill",
+            "Squat and let your balls touch the floor, 5 reps",
+            "On all fours, doggy, tongue out, spin around and shake your tail",
+            "Bate like a monkey for 30 sec",
+            "Slap your dick against your palm 10x",
+            "Helicopter for 10 full rotations",
+            "Measure your cock girth & length, announce the numbers out loud",
+            "Wear a sock on your cock and balls, show off on video",
+            "Show off 3 pairs of underwear, model each one",
+            "Show off your pits, then lick them",
+            "Deepthroat a banana for 30 sec, no hands",
+            "Hump a pillow for 45 sec, eye contact with the cam",
+            "Hold a plank, naked, for 45 sec",
+            "Flex-off: hold your best pose until your partner says stop",
+            "Magic Mike stripper dance",
+            "Bounce your cock for 20 sec",
+            "Let another player control your bate 2 mins",
+            "Spit on it and edge 2x",
+            "Sloppy with lube, stroke freestyle 45 sec",
+            "Choose a dare for another player",
+            "Lucky free roll"
+        ]
+    },
+    {
+        id: "beginner",
+        name: "The Beginner Wheel",
+        icon: "🌱",
+        desc: "No cum, no pain — easy warm-up",
+        theme: { accent: "#7bd88f", slices: ["#123a22", "#0c2415", "#1a4a2c", "#0f2e1a"] },
+        dares: [
+            "5 jumping jacks, shirt off",
+            "Show off your favorite pair of underwear",
+            "Flex! Show off your muscles",
+            "Get naked with a strip tease dance",
+            "Wear a sock on your cock and balls, show off on video",
+            "Pretend to be a dog and bark 5 times",
+            "Wear socks on your hands for 5 minutes",
+            "Bate like a monkey for 30 sec",
+            "Hands behind head — wiggle, shake, windmill",
+            "Hump a pillow for 45 sec",
+            "Squat and let your balls touch the floor",
+            "Blindfold yourself for the next 3 minutes",
+            "Wank slowly for 30 sec",
+            "Stroke 30 sec, loose grip, medium pace",
+            "Rub and slap your body for 60 sec",
+            "Spread your legs wide open and rub your body",
+            "Ice cube on your chest, stomach, cock until it melts",
+            "Tease just the tip with two fingers for 60 sec",
+            "Breath hold while stroking for 15 sec, breathe, then edge",
+            "Edge once with legs in the air",
+            "Edge once while pressing your taint",
+            "Slowest possible strokes for 60 sec — speed up and restart",
+            "Wank on stream for 2 minutes",
+            "Choose a dare for another player",
+            "Lucky free roll"
+        ]
+    }
 ];
 
 // Spin feel — identical params keep every screen in lockstep
 const SPIN_DURATION = 4200;   // ms
 const SPIN_REVOLUTIONS = 3;
+
+/* ---------------- Helpers ---------------- */
+
+const $ = (id) => document.getElementById(id);
+
+function activeWheel() {
+    return WHEELS.find((w) => w.id === S.wheelId) || WHEELS[0];
+}
+
+// Pull a duration (seconds) out of the dare text, if it has one
+function extractTimerDuration(text) {
+    const patterns = [
+        /(\d+)\s*seconds?/i,
+        /(\d+)\s*secs?/i,
+        /(\d+)\s*minutes?/i,
+        /(\d+)\s*mins?/i
+    ];
+    for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+            const value = parseInt(match[1], 10);
+            return pattern.source.includes("minute") ? value * 60 : value;
+        }
+    }
+    return 0;
+}
 
 /* ---------------- State ---------------- */
 
@@ -55,18 +259,20 @@ const S = {
     players: [],          // [{id,name}]
     turnIdx: 0,
     spinning: false,
-    result: null          // { index, spinnerName }
+    result: null,         // { index }
+    wheelId: "balanced",
+    rerolls: {}           // playerId -> count used
 };
 
 const timers = { interval: null, running: false };
 const remoteStreams = new Map();
 
-const $ = (id) => document.getElementById(id);
 const me = () => p2p && p2p.me;
 const isHost = () => p2p && p2p.isHost;
 const myTurn = () => soloMode || (S.players.length && S.players[S.turnIdx].id === (me() && me().id));
 const canSpin = () => (myTurn() || isHost()) && !S.spinning;
 const spinnerName = () => (S.players[S.turnIdx] || {}).name || "…";
+const myRerollsLeft = () => MAX_REROLLS - (S.rerolls[(me() && me().id) || "solo"] || 0);
 
 /* ============================================================
    WHEEL SETUP
@@ -74,21 +280,39 @@ const spinnerName = () => (S.players[S.turnIdx] || {}).name || "…";
 
 function buildWheel() {
     if (wheel) wheel.remove();
+    const theme = activeWheel().theme;
     wheel = new Wheel($("wheelContainer"), {
-        items: DARES.map((d, i) => ({ label: d.label || "D" + (i + 1), weight: 1, value: i })),
-        itemBackgroundColors: ["#0e4354", "#1a1a1a", "#142f3a", "#5a2430"],
+        items: activeWheel().dares.map((text, i) => ({
+            label: String(i + 1),
+            weight: 1,
+            value: i
+        })),
+        itemBackgroundColors: theme.slices,
         itemLabelColors: ["#ffffff"],
         itemLabelFont: "Arial, sans-serif",
-        itemLabelFontSizeMax: 26,
-        lineColor: "#00d4ff",
+        itemLabelFontSizeMax: 30,
+        lineColor: theme.accent,
         lineWidth: 1,
-        borderColor: "#00d4ff",
+        borderColor: theme.accent,
         borderWidth: 2,
         radius: 0.92,
         pointerAngle: 0,
         isInteractive: false,
         onRest: (e) => handleRest(e.currentIndex)
     });
+    applyTheme();
+    renderWheelBanner();
+}
+
+// Theme the page accent to match the active wheel
+function applyTheme() {
+    document.documentElement.style.setProperty("--wheel-accent", activeWheel().theme.accent);
+}
+
+function renderWheelBanner() {
+    const w = activeWheel();
+    $("wheelName").textContent = `${w.icon} ${w.name}`;
+    $("switchWheelBtn").classList.toggle("hidden", !(isHost() || soloMode));
 }
 
 function spinToIndex(index) {
@@ -99,35 +323,43 @@ function spinToIndex(index) {
 
 function handleRest(index) {
     S.spinning = false;
-    S.result = { index, spinnerName: spinnerName() };
-    const dare = DARES[index];
-    showResult(dare, S.result.spinnerName);
+    S.result = { index };
+    showResult(index);
     syncSpinUI();
+
+    // Timed dare? Everyone's timer starts together, right now.
+    const seconds = extractTimerDuration(activeWheel().dares[index]);
+    if (seconds) runTimer({ duration: seconds, at: Date.now() });
 }
 
 /* ============================================================
-   RESULT OVERLAY + TIMER
+   RESULT OVERLAY + TIMER + RE-ROLL
    ============================================================ */
 
-function showResult(dare, who) {
-    $("resultNumber").textContent = "🎯 " + (dare.label || "Dare");
-    $("resultText").textContent = dare.text;
-    $("resultNote").textContent = soloMode ? "" : `${who} spun it — ${who} does it.`;
+function showResult(index) {
+    const dareText = activeWheel().dares[index];
+    $("resultNumber").textContent = `${activeWheel().icon} Dare #${index + 1}`;
+    $("resultText").textContent = dareText;
+    $("resultNote").textContent = soloMode ? "" : `${spinnerName()} spun it — ${spinnerName()} does it.`;
 
-    const hasTimer = dare.seconds > 0;
-    $("timerSection").classList.toggle("hidden", !hasTimer);
-    if (hasTimer) {
-        $("timerDisplay").textContent = fmt(dare.seconds);
-        $("startTimerBtn").classList.toggle("hidden", !canActTimer() || timers.running ? false : false);
-        syncTimerBtn();
-    }
+    const seconds = extractTimerDuration(dareText);
+    $("timerSection").classList.toggle("hidden", !seconds);
+    if (seconds) $("timerDisplay").textContent = fmt(seconds);
 
-    $("doneBtn").classList.toggle("hidden", !canAcknowledge());
+    // Re-roll offer: only the spinner, only if they have tolls left
+    const offerReroll = !soloMode
+        ? (myTurn() || isHost()) && myRerollsLeft() > 0
+        : true;
+    $("rerollBtn").textContent = soloMode
+        ? "🔄 Re-spin"
+        : `🔄 Re-roll — ${myRerollsLeft()} left (costs a juicy truth)`;
+    $("rerollBtn").classList.toggle("hidden", !offerReroll);
+
+    syncTimerBtn();
     $("resultOverlay").classList.remove("hidden");
 }
 
 function canActTimer() { return soloMode || myTurn() || isHost(); }
-function canAcknowledge() { return !timers.running && canActTimer(); }
 
 function fmt(t) {
     t = Math.max(0, Math.round(t));
@@ -135,13 +367,13 @@ function fmt(t) {
 }
 
 function syncTimerBtn() {
-    $("startTimerBtn").classList.toggle("hidden", !canActTimer() || timers.running);
-    $("doneBtn").classList.toggle("hidden", !canAcknowledge());
+    $("startTimerBtn").classList.add("hidden"); // timer auto-starts on rest now
+    $("doneBtn").classList.toggle("hidden", !canActTimer());
 }
 
 function startTimerNet() {
-    const dare = DARES[S.result.index];
-    const msg = { kind: "timer", op: "start", duration: dare.seconds, at: Date.now() };
+    const seconds = extractTimerDuration(activeWheel().dares[S.result.index]);
+    const msg = { kind: "timer", op: "start", duration: seconds, at: Date.now() };
     if (!soloMode) p2p.sendAll({ type: "gameEvent", event: msg });
     runTimer(msg);
 }
@@ -168,12 +400,42 @@ function stopTimer() {
     timers.running = false;
 }
 
+/* ---------------- Re-roll (juicy truth toll) ---------------- */
+
+function askReroll() {
+    if (soloMode) {
+        const index = Math.floor(Math.random() * 25);
+        stopTimer();
+        spinToIndex(index);
+        return;
+    }
+    $("truthInput").value = "";
+    $("truthModal").classList.remove("hidden");
+    $("truthInput").focus();
+}
+
+function submitTruth() {
+    const truth = $("truthInput").value.trim();
+    if (!truth) { $("truthInput").focus(); return; }
+
+    const who = me().name;
+    p2p.sendAll({ type: "chat", name: who, text: "🙊 Re-roll toll: " + truth });
+
+    S.rerolls[me().id] = (S.rerolls[me().id] || 0) + 1;
+
+    $("truthModal").classList.add("hidden");
+    stopTimer();
+
+    const index = Math.floor(Math.random() * 25);
+    p2p.sendAll({ type: "gameEvent", event: { kind: "spin", index, turnIdx: S.turnIdx, rerollerId: me().id } });
+    spinToIndex(index);
+}
+
 function acknowledge() {
     stopTimer();
     $("resultOverlay").classList.add("hidden");
     if (soloMode) { syncSpinUI(); return; }
-    const msg = { kind: "advance" };
-    p2p.sendAll({ type: "gameEvent", event: msg });
+    p2p.sendAll({ type: "gameEvent", event: { kind: "advance" } });
     advanceTurn();
 }
 
@@ -182,6 +444,35 @@ function advanceTurn() {
     S.result = null;
     renderChips();
     syncSpinUI();
+}
+
+/* ============================================================
+   WHEEL SWITCH
+   ============================================================ */
+
+function renderWheelPicker() {
+    const grid = $("wheelGrid");
+    grid.innerHTML = "";
+    WHEELS.forEach((w) => {
+        const card = document.createElement("button");
+        card.className = "wheel-card" + (w.id === S.wheelId ? " active" : "");
+        card.innerHTML = `<span class="wheel-card-icon">${w.icon}</span>
+                          <span class="wheel-card-name">${w.name}</span>
+                          <span class="wheel-card-desc">${w.desc}</span>`;
+        card.addEventListener("click", () => switchWheel(w.id));
+        grid.appendChild(card);
+    });
+}
+
+function switchWheel(wheelId) {
+    S.wheelId = wheelId;
+    buildWheel();
+    $("wheelPicker").classList.add("hidden");
+    if (!soloMode) {
+        p2p.sendAll({ type: "gameEvent", event: { kind: "switch", wheelId } });
+        chat && chat.addMessage({ name: "", text: `🎡 Wheel switched to: ${activeWheel().name}`, system: true });
+        p2p.sendAll({ type: "gameEvent", event: { kind: "chatSystem", text: `🎡 Wheel switched to: ${activeWheel().name}` } });
+    }
 }
 
 /* ============================================================
@@ -212,20 +503,31 @@ function renderChips() {
         const chip = document.createElement("span");
         chip.className = "chip";
         if (i === S.turnIdx) chip.classList.add("up-next");
-        chip.textContent = p.name + (p.id === (me() && me().id) ? " (you)" : "");
+        const tolls = S.rerolls[p.id] || 0;
+        chip.textContent = p.name +
+            (p.id === (me() && me().id) ? " (you)" : "") +
+            (tolls ? ` 🙊${tolls}` : "");
         wrap.appendChild(chip);
     });
 }
 
 /* ============================================================
-   GAME START (host)
+   GAME START (host) / SOLO
    ============================================================ */
 
 function hostStartGame() {
     S.players = p2p.roster.map((p) => ({ id: p.id, name: p.name }));
     S.phase = "play";
     S.turnIdx = 0;
-    p2p.sendAll({ type: "gameEvent", event: { kind: "start", players: S.players } });
+    S.rerolls = {};
+    p2p.sendAll({ type: "gameEvent", event: { kind: "start", players: S.players, wheelId: S.wheelId } });
+    enterGame();
+}
+
+function startSolo() {
+    soloMode = true;
+    S.players = [{ id: "solo", name: "You" }];
+    S.phase = "play";
     enterGame();
 }
 
@@ -240,20 +542,30 @@ function enterGame() {
 }
 
 /* ============================================================
-   NETWORK (mirrors the suite pattern)
+   NETWORK
    ============================================================ */
 
 function applyGameEvent(event) {
     switch (event.kind) {
         case "start":
             S.players = event.players;
+            S.wheelId = event.wheelId || S.wheelId;
             S.phase = "play";
             S.turnIdx = 0;
+            S.rerolls = {};
             enterGame();
+            break;
+        case "switch":
+            S.wheelId = event.wheelId;
+            buildWheel();
             break;
         case "spin":
             S.turnIdx = event.turnIdx;
+            if (event.rerollerId && event.rerollerId !== (me() && me().id)) {
+                S.rerolls[event.rerollerId] = (S.rerolls[event.rerollerId] || 0) + 1;
+            }
             renderChips();
+            stopTimer();
             spinToIndex(event.index);
             break;
         case "timer":
@@ -264,11 +576,14 @@ function applyGameEvent(event) {
             $("resultOverlay").classList.add("hidden");
             advanceTurn();
             break;
+        case "chatSystem":
+            chat && chat.addMessage({ name: "", text: event.text, system: true });
+            break;
     }
 }
 
 function doSpin() {
-    const index = Math.floor(Math.random() * DARES.length);
+    const index = Math.floor(Math.random() * 25);
     if (!soloMode) {
         p2p.sendAll({ type: "gameEvent", event: { kind: "spin", index, turnIdx: S.turnIdx } });
     }
@@ -280,10 +595,7 @@ async function connect(asHost, code) {
     $("connectStatus").textContent = "Getting your cam ready…";
 
     p2p = new P2PRoom({ prefix: ROOM_PREFIX });
-    p2p.onRosterChange = () => {
-        if (isHost() && S.phase === "lobby") { /* roster live-updates */ }
-        renderLobby();
-    };
+    p2p.onRosterChange = () => { renderLobby(); };
     p2p.onStream = (id, who, stream) => { remoteStreams.set(id, stream); addTile(id, who, stream, false); };
     p2p.onStreamRemoved = (id) => { remoteStreams.delete(id); removeTile(id); };
     p2p.onPeerGone = (id, who) => {
@@ -303,7 +615,9 @@ async function connect(asHost, code) {
     };
     p2p.onHostMessage = (msg) => { if (msg && msg.type === "gameEvent") applyGameEvent(msg.event); };
     p2p.onAnyMessage = (peerId, msg) => {
-        if (msg && msg.type === "chat") chat && chat.addMessage({ name: msg.name, text: msg.text, self: false });
+        if (msg && msg.type === "chat") {
+            chat && chat.addMessage({ name: msg.name, text: msg.text, self: msg.name === (me() && me().name) });
+        }
         if (msg && msg.type === "gameEvent") applyGameEvent(msg.event);
     };
     p2p.onError = (err) => { $("connectStatus").textContent = "⚠️ " + err.message; };
@@ -394,12 +708,7 @@ function removeTile(peerId) {
    ============================================================ */
 
 function init() {
-    $("soloBtn").addEventListener("click", () => {
-        soloMode = true;
-        S.players = [{ id: "solo", name: "You" }];
-        S.phase = "play";
-        enterGame();
-    });
+    $("soloBtn").addEventListener("click", startSolo);
 
     $("hostBtn").addEventListener("click", () => connect(true));
     $("joinBtn").addEventListener("click", () => {
@@ -436,6 +745,13 @@ function init() {
     $("spinBtn").addEventListener("click", () => { if (canSpin()) doSpin(); });
     $("startTimerBtn").addEventListener("click", startTimerNet);
     $("doneBtn").addEventListener("click", acknowledge);
+    $("rerollBtn").addEventListener("click", askReroll);
+    $("submitTruthBtn").addEventListener("click", submitTruth);
+    $("cancelTruthBtn").addEventListener("click", () => $("truthModal").classList.add("hidden"));
+
+    $("switchWheelBtn").addEventListener("click", () => { renderWheelPicker(); $("wheelPicker").classList.remove("hidden"); });
+    $("closePickerBtn").addEventListener("click", () => $("wheelPicker").classList.add("hidden"));
+
     $("quitBtn").addEventListener("click", () => { p2p && p2p.destroy(); location.hash = ""; location.reload(); });
 
     $("toggleMicBtn").addEventListener("click", () => {
