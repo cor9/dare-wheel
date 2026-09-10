@@ -326,10 +326,6 @@ function handleRest(index) {
     S.result = { index };
     showResult(index);
     syncSpinUI();
-
-    // Timed dare? Everyone's timer starts together, right now.
-    const seconds = extractTimerDuration(activeWheel().dares[index]);
-    if (seconds) runTimer({ duration: seconds, at: Date.now() });
 }
 
 /* ============================================================
@@ -367,7 +363,10 @@ function fmt(t) {
 }
 
 function syncTimerBtn() {
-    $("startTimerBtn").classList.add("hidden"); // timer auto-starts on rest now
+    const hasTimedDare = S.result &&
+        extractTimerDuration(activeWheel().dares[S.result.index]) > 0;
+    $("startTimerBtn").classList.toggle("hidden",
+        !(hasTimedDare && canActTimer() && !timers.running));
     $("doneBtn").classList.toggle("hidden", !canActTimer());
 }
 
