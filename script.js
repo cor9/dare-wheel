@@ -596,9 +596,14 @@ function applyGameEvent(event) {
             S.players = event.players;
             S.wheelId = event.wheelId || S.wheelId;
             S.phase = "play";
-            S.turnIdx = 0;
             S.rerolls = {};
             enterGame();
+            // late joiner? align the wheel exactly with everyone else
+            if (event.rotation !== undefined && wheel) {
+                wheel.rotation = event.rotation;
+            }
+            S.turnIdx = event.turnIdx !== undefined ? event.turnIdx : 0;
+            renderChips();
             break;
         case "switch":
             S.wheelId = event.wheelId;
@@ -640,7 +645,33 @@ async function connect(asHost, code) {
     $("connectStatus").textContent = "Getting your cam ready…";
 
     p2p = new P2PRoom({ prefix: ROOM_PREFIX, requireMedia: false }); // data channels only
-    p2p.onRosterChange = () => { renderLobby(); };
+    p2p.onRosterChange = (roster) => {
+        renderLobby();
+        if (isHost() && S.phase === "play") {
+            // Catch late joiners up: current players + exact wheel rotation,
+            // sent only to them — no disruption for players mid-game.
+            roster.forEach((p) => {
+                if (!S.players.some((sp) => sp.id === p.id)) {
+                    S.players.push({ id: p.id, name: p.name });
+                    const conn = p2p.conns.get(p.id);
+                    if (conn && conn.open) {
+                        conn.send({
+                            type: "gameEvent",
+                            event: {
+                                kind: "start",
+                                players: S.players,
+                                wheelId: S.wheelId,
+                                rotation: wheel ? wheel.rotation : 0,
+                                turnIdx: S.turnIdx
+                            }
+                        });
+                    }
+                }
+            });
+            renderChips();
+            syncSpinUI();
+        }
+    };
     p2p.onPeerGone = (id, who) => {
         chat && chat.addMessage({ name: "", text: `${who} left the room`, system: true });
         if (S.phase === "play") {
