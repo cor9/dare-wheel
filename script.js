@@ -671,7 +671,7 @@ async function connect(asHost, code) {
             $("shareLink").textContent = link;
             p2p.setRoomMeta({ title: "Dare Wheel", password: $("passwordInput").value.trim() });
             // hub directory connects in the background so it never blocks the room
-            p2p.connectHub(me().name).then(() => p2p.advertiseRoom());
+            p2p.advertiseWhenReady();
         } else {
             $("connectStatus").textContent = "Joining room…";
             await p2p.join(name, code, $("passwordInput").value.trim());
