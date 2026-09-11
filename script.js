@@ -733,14 +733,16 @@ async function connect(asHost, code) {
     };
     lk.onError = (err) => { $("connectStatus").textContent = "⚠️ " + err.message; };
     // room name ties LiveKit to this p2p room; identity maps 1:1 to roster
-    await lk.connect(p2p.hostId, p2p.me.id, name);
+    // Joining the session must not wait on camera permission or the media service.
+    lk.connect(p2p.hostId, p2p.me.id, name).catch((err) => lk.onError(err));
 
     soloMode = false;
     $("mediaBar").classList.remove("hidden");
     if (isHost()) $("startGameBtn").classList.remove("hidden");
     else $("waitingHostNote").classList.remove("hidden");
     $("homeScreen").classList.add("hidden");
-    $("lobbyScreen").classList.remove("hidden");
+    // A running host may already have sent the session snapshot during admission.
+    $("lobbyScreen").classList.toggle("hidden", S.phase === "play");
     setTiles();
     renderLobby();
     $("connectStatus").textContent = "";
