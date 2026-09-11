@@ -778,3 +778,73 @@ h1 {
     border-color: var(--wheel-accent);
     color: var(--wheel-accent);
 }
+
+/* ============ Dare list browser ============ */
+.dare-list-card {
+    max-width: 560px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.dare-list-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.dare-list-tab {
+    background: #2a2a2a;
+    border: 1px solid #4a4a4a;
+    border-radius: 18px;
+    color: #ccc;
+    font-size: 0.75em;
+    font-weight: 600;
+    padding: 7px 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dare-list-tab:hover { border-color: var(--wheel-accent); }
+
+.dare-list-tab.active {
+    border-color: var(--wheel-accent);
+    color: var(--wheel-accent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--wheel-accent) 25%, transparent);
+}
+
+.dare-list-content {
+    overflow-y: auto;
+    text-align: left;
+    margin-bottom: 16px;
+    border: 1px solid #444;
+    border-radius: 10px;
+    padding: 6px 10px;
+}
+
+.dare-list-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 7px 4px;
+    border-bottom: 1px solid #333;
+    font-size: 0.85em;
+}
+
+.dare-list-row:last-child { border-bottom: none; }
+
+.dare-list-num {
+    color: var(--wheel-accent);
+    font-weight: 700;
+    min-width: 22px;
+}
+
+.dare-list-text { color: #eee; flex: 1; line-height: 1.35; }
+
+.dare-list-time {
+    color: #8fb8cc;
+    font-size: 0.85em;
+    white-space: nowrap;
+}

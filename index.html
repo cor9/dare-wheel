@@ -19,10 +19,12 @@
         <!-- ============ HOME SCREEN ============ -->
         <div id="homeScreen" class="screen">
             <div class="home-actions">
+                <button id="browseBtn" class="btn small-btn">🎡 Browse the 6-Wheel Collection</button>
                 <button id="soloBtn" class="btn main-btn">🎯 Spin Solo</button>
                 <div class="panel" style="width:100%">
                     <h2>🎭 Multiplayer</h2>
                     <input type="text" id="nameInput" class="text-input name-input" placeholder="Your name" maxlength="16">
+                    <input type="text" id="passwordInput" class="text-input name-input" placeholder="Room password (blank = public + listed on hub)" maxlength="24">
                     <div class="home-actions" style="margin-top:12px">
                         <button id="hostBtn" class="btn main-btn">🎡 Host a Room</button>
                         <div class="join-row">
@@ -60,6 +62,7 @@
             <div id="wheelBanner" class="wheel-banner">
                 <span id="wheelName"></span>
                 <button id="switchWheelBtn" class="btn small-btn hidden">🔀 Switch Wheel</button>
+                <button id="dareListBtn" class="btn small-btn">📋 Dare List</button>
             </div>
 
             <div class="wheel-stage">
@@ -108,6 +111,16 @@
         </div>
     </div>
 
+    <!-- Dare list browser (lives outside all screens so it works from home too) -->
+    <div id="dareListOverlay" class="result-overlay hidden">
+        <div class="result-card wheel-picker-card dare-list-card">
+            <div id="dareListTitle" class="result-number">📋 Dare List</div>
+            <div id="dareListTabs" class="dare-list-tabs"></div>
+            <div id="dareListContent" class="dare-list-content"></div>
+            <button id="closeDareListBtn" class="btn back-btn">Close</button>
+        </div>
+    </div>
+
     <!-- Media controls -->
     <div id="mediaBar" class="media-bar hidden">
         <button id="toggleMicBtn" class="media-btn" title="Toggle mic">🎤</button>
@@ -118,8 +131,10 @@
     <div id="chatRoot"></div>
 
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.js"></script>
     <script src="spin-wheel.js"></script>
     <script src="p2p.js"></script>
+    <script src="lk.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
