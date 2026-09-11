@@ -687,7 +687,8 @@ async function connect(asHost, code) {
         location.hash = "";
         location.reload();
     };
-    p2p.onHostMessage = (msg) => { if (msg && msg.type === "gameEvent") applyGameEvent(msg.event); };
+    // Events are applied ONLY via onAnyMessage. (onHostMessage would double-fire:
+    // the same host message would advance turns twice — the "stuck on host" bug.)
     p2p.onAnyMessage = (peerId, msg) => {
         if (msg && msg.type === "chat") {
             chat && chat.addMessage({ name: msg.name, text: msg.text, self: msg.name === (me() && me().name) });
