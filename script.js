@@ -584,6 +584,29 @@ function enterGame() {
     setTiles();
     renderChips();
     syncSpinUI();
+    // Solo mode: players can still open their cam as a show
+    $("soloCamBtn").classList.toggle("hidden", !soloMode);
+}
+
+let soloCamStream = null;
+
+async function toggleSoloCam() {
+    if (soloCamStream) {
+        soloCamStream.getTracks().forEach((t) => t.stop());
+        soloCamStream = null;
+        $("videoGridGame").innerHTML = "";
+        $("soloCamBtn").textContent = "📹 Cam";
+        return;
+    }
+    try {
+        soloCamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    } catch (err) {
+        $("soloCamBtn").textContent = "📹 blocked";
+        setTimeout(() => ($("soloCamBtn").textContent = "📹 Cam"), 2000);
+        return;
+    }
+    addTile("solo-cam", "You", soloCamStream, true);
+    $("soloCamBtn").textContent = "📹 On! (tap to hide)";
 }
 
 /* ============================================================
@@ -805,6 +828,7 @@ function removeTile(peerId) {
 
 function init() {
     $("soloBtn").addEventListener("click", startSolo);
+    $("soloCamBtn").addEventListener("click", toggleSoloCam);
 
     $("hostBtn").addEventListener("click", () => connect(true));
     $("joinBtn").addEventListener("click", () => {
