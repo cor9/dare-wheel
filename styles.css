@@ -848,3 +848,33 @@ h1 {
     font-size: 0.85em;
     white-space: nowrap;
 }
+
+/* ============ Result card: docked bottom, out of the cam's way ============ */
+#resultOverlay {
+    background: rgba(0, 0, 0, 0.2);
+    align-items: flex-end;
+    padding: 0 16px 18px;
+}
+
+#resultOverlay .result-card {
+    max-width: 640px;
+    width: 100%;
+    padding: 18px 26px;
+    animation: slideUpDock 0.3s ease-out;
+}
+
+@keyframes slideUpDock {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#resultOverlay .result-text {
+    font-size: 1.05em;
+    max-height: 90px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+
+#resultOverlay .result-number { margin-bottom: 8px; }
+#resultOverlay .result-card .timer-display { font-size: 1.9em; padding: 6px 14px; margin-bottom: 10px; }
+#resultOverlay .result-card .main-btn { margin-top: 10px; }
