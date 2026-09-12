@@ -667,7 +667,7 @@ async function connect(asHost, code) {
     const name = $("nameInput").value.trim() || "Gooner " + Math.floor(Math.random() * 90 + 10);
     $("connectStatus").textContent = "Getting your cam ready…";
 
-    p2p = new P2PRoom({ prefix: ROOM_PREFIX, requireMedia: false }); // data channels only
+    p2p = new P2PRoom({ prefix: ROOM_PREFIX, requireMedia: false, maxPeers: 5 }); // data channels only
     p2p.onRosterChange = (roster) => {
         renderLobby();
         if (isHost() && S.phase === "play") {
