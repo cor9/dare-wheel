@@ -722,7 +722,7 @@ async function connect(asHost, code) {
 
     try {
         if (asHost) {
-            const link = await p2p.host(name);
+            const link = await p2p.host(name, (() => { const c = localStorage.getItem("batorRoom:" + ROOM_PREFIX); return c ? { code: c } : {}; })());
             $("shareLink").textContent = link;
             p2p.setRoomMeta({ title: "Dare Wheel", password: $("passwordInput").value.trim() });
             // hub directory connects in the background so it never blocks the room
@@ -857,7 +857,15 @@ function init() {
             try { await navigator.share({ title: "DARE WHEEL", text: "Spin it if you dare:", url }); return; } catch (_) {}
         }
         try { await navigator.clipboard.writeText(url); alert("Link copied — text it to your buds!"); } catch (_) {}
-    });
+    
+
+    // Save this room as MY permanent link (device-local)
+    $("saveRoomBtn") && $("saveRoomBtn").addEventListener("click", () => {
+        localStorage.setItem("batorRoom:" + ROOM_PREFIX, p2p.roomCode);
+        $("saveRoomBtn").textContent = "🔖 Saved! This is YOUR link now";
+        $("saveRoomBtn").style.borderColor = "#3dff73";
+        setTimeout(() => { $("saveRoomBtn").textContent = "🔖 Permanent Link"; }, 2500);
+    });});
 
     $("startGameBtn").addEventListener("click", hostStartGame);
     $("leaveLobbyBtn").addEventListener("click", () => { p2p && p2p.destroy(); location.hash = ""; location.reload(); });
