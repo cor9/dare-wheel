@@ -11,7 +11,8 @@ for (const phase of ['lobby','play']) test(`join preserves ${phase} screen witho
   return els.get(id);
  };
  const S={phase:'lobby'};
- const context=vm.createContext({ $,S,ROOM_PREFIX:'test',Math,tiles:new Map(),soloMode:false,
+  const context=vm.createContext({ $,S,ROOM_PREFIX:'test',Math,tiles:new Map(),soloMode:false,
+   window:{},syncInterval:null,clearInterval:()=>{},setInterval:()=>1,requestGameState:()=>{},
   P2PRoom:class {constructor(){this.me={id:'guest'};this.hostId='host';}async join(){S.phase=phase;}},
   LKMedia:class {connect(){return new Promise(()=>{});}},
   mountChatUI:()=>({}),isHost:()=>false,setTiles:()=>{},renderLobby:()=>{},

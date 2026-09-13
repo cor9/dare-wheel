@@ -241,7 +241,7 @@ function extractTimerDuration(text) {
         const match = text.match(pattern);
         if (match) {
             const value = parseInt(match[1], 10);
-            return pattern.source.includes("minute") ? value * 60 : value;
+            return pattern.source.includes("min") ? value * 60 : value;
         }
     }
     return 0;
@@ -256,22 +256,27 @@ let wheel = null;
 let soloMode = false;
 
 const S = {
+    revision: 0,
     phase: "lobby",       // lobby | play
     players: [],          // [{id,name}]
     turnIdx: 0,
     spinning: false,
     result: null,         // { index }
+    spin: null,           // { index, at } for catching up mid-animation
+    timer: null,          // { duration, at } for catching up mid-countdown
     wheelId: "balanced",
     rerolls: {}           // playerId -> count used
 };
 
 const timers = { interval: null, running: false };
+let syncedRevision = -1;
+let syncInterval = null;
 const tiles = new Map(); // identity -> { name, stream, muted }
 
 const me = () => p2p && p2p.me;
 const isHost = () => p2p && p2p.isHost;
 const myTurn = () => soloMode || (S.players.length && S.players[S.turnIdx].id === (me() && me().id));
-const canSpin = () => (myTurn() || isHost()) && !S.spinning;
+const canSpin = () => S.phase === "play" && (myTurn() || isHost()) && !S.spinning && !S.result;
 const spinnerName = () => (S.players[S.turnIdx] || {}).name || "…";
 const myRerollsLeft = () => MAX_REROLLS - (S.rerolls[(me() && me().id) || "solo"] || 0);
 
@@ -316,17 +321,26 @@ function renderWheelBanner() {
     $("switchWheelBtn").classList.toggle("hidden", !(isHost() || soloMode));
 }
 
-function spinToIndex(index) {
+function spinToIndex(index, duration = SPIN_DURATION, at = Date.now()) {
+    stopTimer();
+    S.result = null;
+    S.spin = { index, at };
     S.spinning = true;
+    $("resultOverlay").classList.add("hidden");
     syncSpinUI();
-    wheel.spinToItem(index, SPIN_DURATION, true, SPIN_REVOLUTIONS, 1);
+    wheel.spinToItem(index, duration, true, SPIN_REVOLUTIONS, 1);
 }
 
 function handleRest(index) {
+    if (!S.spinning || !S.spin || S.spin.index !== index) return;
     S.spinning = false;
     S.result = { index };
     showResult(index);
     syncSpinUI();
+    if (!soloMode && isHost()) {
+        S.revision++;
+        sendGameState();
+    }
 }
 
 /* ============================================================
@@ -372,25 +386,27 @@ function syncTimerBtn() {
 }
 
 function startTimerNet() {
+    if (!S.result || !canActTimer() || timers.running) return;
     const seconds = extractTimerDuration(activeWheel().dares[S.result.index]);
-    const msg = { kind: "timer", op: "start", duration: seconds, at: Date.now() };
-    if (!soloMode) lk && lk.sendToAll({ type: "gameEvent", event: msg });
-    runTimer(msg);
+    if (seconds) sendGameEvent({ kind: "timer", op: "start", duration: seconds, at: Date.now() });
 }
 
 function runTimer({ duration, at }) {
     stopTimer();
+    S.timer = { duration, at };
     timers.running = true;
     const tick = () => {
         const remaining = duration - (Date.now() - at) / 1000;
         $("timerDisplay").textContent = remaining <= 0 ? "Time's up!" : fmt(remaining);
         if (remaining <= 0) {
             stopTimer();
+            // Preserve the deadline so later snapshots still show expiry.
+            S.timer = { duration, at };
             syncTimerBtn();
         }
     };
-    tick();
     timers.interval = setInterval(tick, 250);
+    tick();
     syncTimerBtn();
 }
 
@@ -398,6 +414,7 @@ function stopTimer() {
     if (timers.interval) clearInterval(timers.interval);
     timers.interval = null;
     timers.running = false;
+    S.timer = null;
 }
 
 /* ---------------- Re-roll (juicy truth toll) ---------------- */
@@ -421,27 +438,27 @@ function submitTruth() {
     const who = me().name;
     lk && lk.sendToAll({ type: 'chat', name: who, text: "🙊 Re-roll toll: " + truth });
 
-    S.rerolls[me().id] = (S.rerolls[me().id] || 0) + 1;
-
     $("truthModal").classList.add("hidden");
-    stopTimer();
 
     const index = Math.floor(Math.random() * 25);
-    lk && lk.sendToAll({ type: "gameEvent", event: { kind: "spin", index, turnIdx: S.turnIdx, rerollerId: me().id } });
-    spinToIndex(index);
+    sendGameEvent({ kind: "spin", index, turnIdx: S.turnIdx, rerollerId: me().id });
 }
 
 function acknowledge() {
-    stopTimer();
-    $("resultOverlay").classList.add("hidden");
-    if (soloMode) { syncSpinUI(); return; }
-    lk && lk.sendToAll({ type: "gameEvent", event: { kind: "advance" } });
-    advanceTurn();
+    if (!S.result || !canActTimer()) return;
+    if (soloMode) {
+        $("resultOverlay").classList.add("hidden");
+        advanceTurn();
+        return;
+    }
+    sendGameEvent({ kind: "advance" });
 }
 
 function advanceTurn() {
+    stopTimer();
     if (S.players.length) S.turnIdx = (S.turnIdx + 1) % S.players.length;
     S.result = null;
+    S.spin = null;
     renderChips();
     syncSpinUI();
 }
@@ -465,13 +482,11 @@ function renderWheelPicker() {
 }
 
 function switchWheel(wheelId) {
-    S.wheelId = wheelId;
-    buildWheel();
+    sendGameEvent({ kind: "switch", wheelId });
     $("wheelPicker").classList.add("hidden");
     if (!soloMode) {
-        lk && lk.sendToAll({ type: "gameEvent", event: { kind: "switch", wheelId } });
         chat && chat.addMessage({ name: "", text: `🎡 Wheel switched to: ${activeWheel().name}`, system: true });
-        lk && lk.sendToAll({ type: "gameEvent", event: { kind: "chatSystem", text: `🎡 Wheel switched to: ${activeWheel().name}` } });
+        lk && lk.sendToAll({ type: "chat", name: "", text: `Wheel switched to: ${activeWheel().name}` });
     }
 }
 
@@ -561,12 +576,8 @@ function renderChips() {
    ============================================================ */
 
 function hostStartGame() {
-    S.players = p2p.roster.map((p) => ({ id: p.id, name: p.name }));
-    S.phase = "play";
-    S.turnIdx = 0;
-    S.rerolls = {};
-    lk && lk.sendToAll({ type: "gameEvent", event: { kind: "start", players: S.players, wheelId: S.wheelId } });
-    enterGame();
+    if (!isHost() || S.phase !== "lobby") return;
+    sendGameEvent({ kind: "start", players: p2p.roster.map((p) => ({ id: p.id, name: p.name })), wheelId: S.wheelId });
 }
 
 function startSolo() {
@@ -579,6 +590,7 @@ function startSolo() {
 function enterGame() {
     $("homeScreen").classList.add("hidden");
     $("lobbyScreen").classList.add("hidden");
+    $("waitingHostNote").classList.add("hidden");
     $("gameScreen").classList.remove("hidden");
     buildWheel();
     setTiles();
@@ -620,13 +632,11 @@ function applyGameEvent(event) {
             S.wheelId = event.wheelId || S.wheelId;
             S.phase = "play";
             S.rerolls = {};
+            S.turnIdx = 0;
+            S.result = null;
+            S.spin = null;
+            stopTimer();
             enterGame();
-            // late joiner? align the wheel exactly with everyone else
-            if (event.rotation !== undefined && wheel) {
-                wheel.rotation = event.rotation;
-            }
-            S.turnIdx = event.turnIdx !== undefined ? event.turnIdx : 0;
-            renderChips();
             break;
         case "switch":
             S.wheelId = event.wheelId;
@@ -634,7 +644,7 @@ function applyGameEvent(event) {
             break;
         case "spin":
             S.turnIdx = event.turnIdx;
-            if (event.rerollerId && event.rerollerId !== (me() && me().id)) {
+            if (event.rerollerId) {
                 S.rerolls[event.rerollerId] = (S.rerolls[event.rerollerId] || 0) + 1;
             }
             renderChips();
@@ -657,10 +667,59 @@ function applyGameEvent(event) {
 
 function doSpin() {
     const index = Math.floor(Math.random() * 25);
-    if (!soloMode) {
-        lk && lk.sendToAll({ type: "gameEvent", event: { kind: "spin", index, turnIdx: S.turnIdx } });
+    sendGameEvent({ kind: "spin", index, turnIdx: S.turnIdx });
+}
+
+function sendGameEvent(event) {
+    if (soloMode || isHost()) {
+        applyGameEvent(event);
+        if (!soloMode) {
+            S.revision++;
+            sendGameState();
+        }
+    } else if (lk) {
+        lk.sendToAll({ type: "gameAction", revision: S.revision, event });
     }
-    spinToIndex(index);
+}
+
+function sendGameState(to) {
+    if (!isHost() || !lk) return;
+    // Copy now: LKMedia may queue this packet while the host is connecting.
+    lk.sendToAll({ type: "gameState", to, game: JSON.parse(JSON.stringify(S)), rotation: wheel ? wheel.rotation : 0 });
+}
+
+function requestGameState() {
+    if (!isHost() && lk && lk._connected && p2p && !p2p._destroyed) {
+        lk.sendToAll({ type: "syncRequest", revision: syncedRevision });
+    }
+}
+
+function receiveGameState(msg) {
+    const state = msg.game;
+    if (!state || !Number.isInteger(state.revision) || state.revision <= syncedRevision) return;
+    const previousSpin = S.spin;
+    const previousWheel = S.wheelId;
+    const entering = S.phase !== "play" || !wheel;
+    stopTimer();
+    Object.assign(S, state);
+    syncedRevision = state.revision;
+    if (S.phase !== "play") return;
+
+    if (entering) enterGame();
+    else if (previousWheel !== S.wheelId) buildWheel();
+    if (S.spinning && S.spin) {
+        const remaining = Math.max(1, SPIN_DURATION - (Date.now() - S.spin.at));
+        if (entering || previousWheel !== S.wheelId || !previousSpin || previousSpin.at !== S.spin.at) {
+            spinToIndex(S.spin.index, remaining, S.spin.at);
+        }
+    } else {
+        wheel.stop();
+        wheel.rotation = msg.rotation;
+        $("resultOverlay").classList.toggle("hidden", !S.result);
+        if (S.result) showResult(S.result.index);
+    }
+    if (state.timer) runTimer(state.timer);
+    syncSpinUI();
 }
 
 async function connect(asHost, code) {
@@ -671,38 +730,29 @@ async function connect(asHost, code) {
     p2p.onRosterChange = (roster) => {
         renderLobby();
         if (isHost() && S.phase === "play") {
-            // Catch late joiners up: current players + exact wheel rotation,
-            // sent only to them — no disruption for players mid-game.
+            // Admission updates the host's state; LiveKit-ready guests request it.
+            let changed = false;
             roster.forEach((p) => {
                 if (!S.players.some((sp) => sp.id === p.id)) {
                     S.players.push({ id: p.id, name: p.name });
-                    const conn = p2p.conns.get(p.id);
-                    if (conn && conn.open) {
-                        conn.send({
-                            type: "gameEvent",
-                            event: {
-                                kind: "start",
-                                players: S.players,
-                                wheelId: S.wheelId,
-                                rotation: wheel ? wheel.rotation : 0,
-                                turnIdx: S.turnIdx
-                            }
-                        });
-                    }
+                    changed = true;
                 }
             });
+            if (changed) { S.revision++; sendGameState(); }
             renderChips();
             syncSpinUI();
         }
     };
     p2p.onPeerGone = (id, who) => {
         chat && chat.addMessage({ name: "", text: `${who} left the room`, system: true });
-        if (S.phase === "play") {
+        if (isHost() && S.phase === "play") {
             const idx = S.players.findIndex((p) => p.id === id);
             S.players = S.players.filter((p) => p.id !== id);
             if (idx > -1 && idx <= S.turnIdx && S.turnIdx > 0) S.turnIdx--;
             if (S.players.length) S.turnIdx = S.turnIdx % S.players.length;
             renderChips(); syncSpinUI();
+            S.revision++;
+            sendGameState();
         }
     };
     p2p.onHostGone = () => {
@@ -755,15 +805,53 @@ async function connect(asHost, code) {
     };
     lk.onError = (err) => { $("connectStatus").textContent = "⚠️ " + err.message; };
 
-    // LiveKit data pipe: everyone's events arrive here in real time
+    // Only the host commits game actions. Snapshots are safe to receive again
+    // after a delayed join/reconnect and never restart the current turn.
     lk.onData = (fromId, msg) => {
-        if (!msg || typeof msg !== "object" || !chat) return;
+        if (!msg || typeof msg !== "object") return;
         if (msg.type === "chat") {
-            chat.addMessage({ name: msg.name, text: msg.text, self: msg.name === (me() && me().name) });
+            chat && chat.addMessage({ name: msg.name, text: msg.text, self: fromId === me().id });
             return;
         }
-        if (msg.type === "gameEvent") applyGameEvent(msg.event);
+        if (!isHost()) {
+            if (fromId === p2p.hostId && msg.type === "gameState" && (!msg.to || msg.to === me().id)) receiveGameState(msg);
+            return;
+        }
+        if (!p2p.roster.some((p) => p.id === fromId)) return;
+        const actionRevision = S.revision;
+        // Background tabs can suspend the wheel's animation callback. Finish
+        // elapsed spins from the clock too, so guests are not blocked by it.
+        if (S.spinning && S.spin && Date.now() >= S.spin.at + SPIN_DURATION) {
+            wheel.stop();
+            wheel.rotation = 360 - (S.spin.index + 0.5) * 360 / activeWheel().dares.length;
+            handleRest(S.spin.index);
+        }
+        if (msg.type === "syncRequest") {
+            if (msg.revision !== S.revision) sendGameState(fromId);
+            return;
+        }
+        if (msg.type !== "gameAction" || !msg.event) return;
+        const event = msg.event;
+        const actor = (S.players[S.turnIdx] || {}).id === fromId;
+        if (msg.revision !== actionRevision || S.phase !== "play" || !actor || S.spinning) {
+            sendGameState(fromId);
+            return;
+        }
+        if (event.kind === "advance" && S.result) sendGameEvent({ kind: "advance" });
+        if (event.kind === "timer" && event.op === "start" && S.result && !timers.running) startTimerNet();
+        if (event.kind === "spin" && Number.isInteger(event.index) && event.index >= 0 && event.index < activeWheel().dares.length) {
+            const reroll = event.rerollerId === fromId && S.result && (S.rerolls[fromId] || 0) < MAX_REROLLS;
+            if (!S.result || reroll) sendGameEvent({ kind: "spin", index: event.index, turnIdx: S.turnIdx, ...(reroll ? { rerollerId: fromId } : {}) });
+        }
     };
+    lk.onConnected = () => {
+        if (isHost()) sendGameState();
+        else requestGameState();
+    };
+    clearInterval(syncInterval);
+    // A start broadcast is not replayed for someone who joins LiveKit later.
+    // Also recover missed turns after a mobile tab sleeps or the SFU reconnects.
+    syncInterval = setInterval(requestGameState, 3000);
 
     // room name ties LiveKit to this p2p room; identity maps 1:1 to roster
     // Joining the session must not wait on camera permission or the media service.
@@ -772,7 +860,7 @@ async function connect(asHost, code) {
     soloMode = false;
     $("mediaBar").classList.remove("hidden");
     if (isHost()) $("startGameBtn").classList.remove("hidden");
-    else $("waitingHostNote").classList.remove("hidden");
+    else $("waitingHostNote").classList.toggle("hidden", S.phase === "play");
     $("homeScreen").classList.add("hidden");
     // A running host may already have sent the session snapshot during admission.
     $("lobbyScreen").classList.toggle("hidden", S.phase === "play");
