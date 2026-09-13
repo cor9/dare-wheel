@@ -374,7 +374,7 @@ function syncTimerBtn() {
 function startTimerNet() {
     const seconds = extractTimerDuration(activeWheel().dares[S.result.index]);
     const msg = { kind: "timer", op: "start", duration: seconds, at: Date.now() };
-    if (!soloMode) p2p.sendAll({ type: "gameEvent", event: msg });
+    if (!soloMode) lk && lk.sendToAll({ type: "gameEvent", event: msg });
     runTimer(msg);
 }
 
@@ -419,7 +419,7 @@ function submitTruth() {
     if (!truth) { $("truthInput").focus(); return; }
 
     const who = me().name;
-    p2p.sendAll({ type: "chat", name: who, text: "🙊 Re-roll toll: " + truth });
+    lk && lk.sendToAll({ type: 'chat', name: who, text: "🙊 Re-roll toll: " + truth });
 
     S.rerolls[me().id] = (S.rerolls[me().id] || 0) + 1;
 
@@ -427,7 +427,7 @@ function submitTruth() {
     stopTimer();
 
     const index = Math.floor(Math.random() * 25);
-    p2p.sendAll({ type: "gameEvent", event: { kind: "spin", index, turnIdx: S.turnIdx, rerollerId: me().id } });
+    lk && lk.sendToAll({ type: "gameEvent", event: { kind: "spin", index, turnIdx: S.turnIdx, rerollerId: me().id } });
     spinToIndex(index);
 }
 
@@ -435,7 +435,7 @@ function acknowledge() {
     stopTimer();
     $("resultOverlay").classList.add("hidden");
     if (soloMode) { syncSpinUI(); return; }
-    p2p.sendAll({ type: "gameEvent", event: { kind: "advance" } });
+    lk && lk.sendToAll({ type: "gameEvent", event: { kind: "advance" } });
     advanceTurn();
 }
 
@@ -469,9 +469,9 @@ function switchWheel(wheelId) {
     buildWheel();
     $("wheelPicker").classList.add("hidden");
     if (!soloMode) {
-        p2p.sendAll({ type: "gameEvent", event: { kind: "switch", wheelId } });
+        lk && lk.sendToAll({ type: "gameEvent", event: { kind: "switch", wheelId } });
         chat && chat.addMessage({ name: "", text: `🎡 Wheel switched to: ${activeWheel().name}`, system: true });
-        p2p.sendAll({ type: "gameEvent", event: { kind: "chatSystem", text: `🎡 Wheel switched to: ${activeWheel().name}` } });
+        lk && lk.sendToAll({ type: "gameEvent", event: { kind: "chatSystem", text: `🎡 Wheel switched to: ${activeWheel().name}` } });
     }
 }
 
@@ -565,7 +565,7 @@ function hostStartGame() {
     S.phase = "play";
     S.turnIdx = 0;
     S.rerolls = {};
-    p2p.sendAll({ type: "gameEvent", event: { kind: "start", players: S.players, wheelId: S.wheelId } });
+    lk && lk.sendToAll({ type: "gameEvent", event: { kind: "start", players: S.players, wheelId: S.wheelId } });
     enterGame();
 }
 
@@ -658,7 +658,7 @@ function applyGameEvent(event) {
 function doSpin() {
     const index = Math.floor(Math.random() * 25);
     if (!soloMode) {
-        p2p.sendAll({ type: "gameEvent", event: { kind: "spin", index, turnIdx: S.turnIdx } });
+        lk && lk.sendToAll({ type: "gameEvent", event: { kind: "spin", index, turnIdx: S.turnIdx } });
     }
     spinToIndex(index);
 }
@@ -710,14 +710,8 @@ async function connect(asHost, code) {
         location.hash = "";
         location.reload();
     };
-    // Events are applied ONLY via onAnyMessage. (onHostMessage would double-fire:
-    // the same host message would advance turns twice — the "stuck on host" bug.)
-    p2p.onAnyMessage = (peerId, msg) => {
-        if (msg && msg.type === "chat") {
-            chat && chat.addMessage({ name: msg.name, text: msg.text, self: msg.name === (me() && me().name) });
-        }
-        if (msg && msg.type === "gameEvent") applyGameEvent(msg.event);
-    };
+    // LiveKit data carries chat + game sync; PeerJS stays for roster only.
+    p2p.onAnyMessage = () => {};
     p2p.onError = (err) => { $("connectStatus").textContent = "⚠️ " + err.message; };
 
     try {
@@ -739,9 +733,19 @@ async function connect(asHost, code) {
     chat = mountChatUI($("chatRoot"), {
         selfName: name,
         onSend: (text) => {
-            p2p.sendAll({ type: "chat", name: me().name, text });
+            lk && lk.sendToAll({ type: 'chat', name: me().name, text });
             chat.addMessage({ name: me().name, text, self: true });
         }
+    });
+
+    // LiveKit data pipe: everyone's events arrive here in real time
+    lk && (lk.onData = (fromId, msg) => {
+        if (!msg || typeof msg !== "object" || !chat) return;
+        if (msg.type === "chat") {
+            chat.addMessage({ name: msg.name, text: msg.text, self: msg.name === (me() && me().name) });
+            return;
+        }
+        if (msg.type === "gameEvent") applyGameEvent(msg.event);
     });
 
     // ---- LiveKit cams (media layer) ----
