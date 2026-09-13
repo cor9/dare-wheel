@@ -738,16 +738,6 @@ async function connect(asHost, code) {
         }
     });
 
-    // LiveKit data pipe: everyone's events arrive here in real time
-    lk && (lk.onData = (fromId, msg) => {
-        if (!msg || typeof msg !== "object" || !chat) return;
-        if (msg.type === "chat") {
-            chat.addMessage({ name: msg.name, text: msg.text, self: msg.name === (me() && me().name) });
-            return;
-        }
-        if (msg.type === "gameEvent") applyGameEvent(msg.event);
-    });
-
     // ---- LiveKit cams (media layer) ----
     window.LK_TILE_CONFIG = {
         isHost: () => p2p && p2p.isHost,
@@ -764,6 +754,17 @@ async function connect(asHost, code) {
         removeTile(id);
     };
     lk.onError = (err) => { $("connectStatus").textContent = "⚠️ " + err.message; };
+
+    // LiveKit data pipe: everyone's events arrive here in real time
+    lk.onData = (fromId, msg) => {
+        if (!msg || typeof msg !== "object" || !chat) return;
+        if (msg.type === "chat") {
+            chat.addMessage({ name: msg.name, text: msg.text, self: msg.name === (me() && me().name) });
+            return;
+        }
+        if (msg.type === "gameEvent") applyGameEvent(msg.event);
+    };
+
     // room name ties LiveKit to this p2p room; identity maps 1:1 to roster
     // Joining the session must not wait on camera permission or the media service.
     lk.connect(p2p.hostId, p2p.me.id, name).catch((err) => lk.onError(err));
