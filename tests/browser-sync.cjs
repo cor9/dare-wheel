@@ -7,6 +7,7 @@ const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
 const baseline = process.env.BASELINE === '1';
+const live = process.env.LIVE === '1';
 const source = baseline
     ? execFileSync('git', ['show', 'HEAD:script.js'], { cwd: root, encoding: 'utf8' })
     : readFileSync(path.join(root, 'script.js'), 'utf8');
@@ -19,7 +20,7 @@ const source = baseline
     async function page(browser, name, delayed = false) {
         const p = await browser.newPage();
         p.on('pageerror', err => errors.push(`${name}: ${err.message}`));
-        await p.route('**/script.js*', route => route.fulfill({ body: source, contentType: 'application/javascript' }));
+        if (!live) await p.route('**/script.js*', route => route.fulfill({ body: source, contentType: 'application/javascript' }));
         await p.route('**/beacon', route => route.fulfill({ body: '{"ok":true}', contentType: 'application/json' }));
         if (delayed) {
             await p.route('**/token?*', async route => {
