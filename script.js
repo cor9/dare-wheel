@@ -856,8 +856,8 @@ function init() {
         if (navigator.share) {
             try { await navigator.share({ title: "DARE WHEEL", text: "Spin it if you dare:", url }); return; } catch (_) {}
         }
-        try { await navigator.clipboard.writeText(url); alert("Link copied — text it to your buds!"); } catch (_) {}
-    
+        try { await navigator.clipboard.writeText(url); alert("Link copied — text it to your buds!"); } catch (_) {} });
+
 
     // Save this room as MY permanent link (device-local)
     $("saveRoomBtn") && $("saveRoomBtn").addEventListener("click", () => {
@@ -872,7 +872,7 @@ function init() {
         $("saveRoomBtn").textContent = "🔖 Saved! This is YOUR link now";
         $("saveRoomBtn").style.borderColor = "#3dff73";
         setTimeout(() => { $("saveRoomBtn").textContent = "🔖 Permanent Link"; }, 2500);
-    });});
+    });
 
     $("startGameBtn").addEventListener("click", hostStartGame);
     $("leaveLobbyBtn").addEventListener("click", () => { p2p && p2p.destroy(); location.hash = ""; location.reload(); });
