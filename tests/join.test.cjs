@@ -13,10 +13,11 @@ for (const phase of ['lobby','play']) test(`join preserves ${phase} screen witho
  const S={phase:'lobby'};
   const context=vm.createContext({ $,S,ROOM_PREFIX:'test',Math,tiles:new Map(),soloMode:false,
    window:{},syncInterval:null,clearInterval:()=>{},setInterval:()=>1,requestGameState:()=>{},
-  P2PRoom:class {constructor(){this.me={id:'guest'};this.hostId='host';}async join(){S.phase=phase;}},
-  LKMedia:class {connect(){return new Promise(()=>{});}},
-  mountChatUI:()=>({}),isHost:()=>false,setTiles:()=>{},renderLobby:()=>{},
- });
+   P2PRoom:class {constructor(){this.me={id:'guest'};this.hostId='host';this.roster=[{id:'host'},{id:'guest'}];}async join(){S.phase=phase;}},
+   LKMedia:class {connect(){return new Promise(()=>{});}},
+   mountChatUI:()=>({}),isHost:()=>false,setTiles:()=>{},renderLobby:()=>{},
+   ensureMediaConnection:()=>{},myName:null,lkConnected:false,
+  });
  vm.runInContext(connect,context);
  await context.connect(false,'abc123');
  assert.equal($('homeScreen').classList.contains('hidden'),true);

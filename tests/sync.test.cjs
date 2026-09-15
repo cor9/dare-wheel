@@ -51,8 +51,9 @@ function room() {
                 setRoomMeta() {} advertiseWhenReady() {}
             },
             LKMedia: class {
-                constructor() { c.media = this; this._connected = false; this.queue = []; this.onConnected = () => {}; }
-                connect() { return Promise.resolve(true); }
+                constructor() { c.media = this; this._connected = false; this.queue = []; this.onConnected = () => {}; this.connectCalls = 0; this.disconnectCalls = 0; }
+                connect() { this.connectCalls++; return Promise.resolve(true); }
+                disconnect() { this.disconnectCalls++; this._connected = false; }
                 sendToAll(msg) {
                     if (!this._connected) { this.queue.push(msg); return; }
                     const payload = JSON.parse(JSON.stringify(msg));
@@ -79,6 +80,11 @@ function room() {
     return {
         client, packets,
         advance(ms) { now += ms; },
+        leave(gone) {
+            const idx = roster.findIndex((p) => p.id === gone.id);
+            if (idx > -1) roster.splice(idx, 1);
+            for (const other of clients) if (other !== gone) other.p2p?.onRosterChange?.(roster);
+        },
         flush() {
             let count = 0;
             while (packets.length) {
@@ -218,4 +224,23 @@ test('expired timer remains expired after a roster update', async () => {
     await guest.run('connect(false, "abc123")'); guest.ready(); net.flush();
     assert.equal(guest.element('timerDisplay').textContent, "Time's up!");
     assert.equal(guest.run('timers.running'), false);
+});
+
+test('media only connects once a second player is present, and disconnects back to solo', async () => {
+    const net = room(), host = net.client('host');
+    await host.run('connect(true)');
+    assert.equal(host.media.connectCalls, 0, 'a lone host must not connect to the media server');
+    assert.equal(host.element('videoGridLobby').children.some((c) => /friend joins/.test(c.textContent)), true);
+
+    const guest = net.client('guest');
+    await guest.run('connect(false, "abc123")');
+    assert.equal(host.media.connectCalls, 1, 'host connects the moment a second player is present');
+    assert.equal(guest.media.connectCalls, 1, 'guest connects immediately (2 are already present)');
+
+    net.leave(guest);
+    assert.equal(host.media.disconnectCalls, 1, 'host drops the media connection once alone again');
+
+    const guest2 = net.client('guest2');
+    await guest2.run('connect(false, "abc123")');
+    assert.equal(host.media.connectCalls, 2, 'host reconnects when a new player arrives');
 });
