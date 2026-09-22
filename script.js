@@ -585,6 +585,9 @@ function hostStartGame() {
 
 function startSolo() {
     soloMode = true;
+    // Solo must never create/join a media room — the old placeholder made it
+    // look like a friend could join.
+    if (lkConnected && lk) { lkConnected = false; lk.disconnect(); }
     S.players = [{ id: "solo", name: "You" }];
     S.phase = "play";
     enterGame();
@@ -891,12 +894,12 @@ function renderLobby() {
  *  person actually shows up — most sessions are one person alone in a
  *  lobby, and there's no point burning media-server resources for that. */
 function ensureMediaConnection() {
-    if (!lk || !p2p) return;
+    if (!lk || !p2p || soloMode) return;
     const has2 = p2p.roster.length >= 2;
     if (has2 && !lkConnected) {
         lkConnected = true;
         lk.connect(p2p.hostId, p2p.me.id, myName).catch((err) => lk.onError(err));
-    } else if (!has2 && lkConnected) {
+    }     else if (!has2 && lkConnected && !soloMode) {
         lkConnected = false;
         lk.disconnect();
     }
@@ -907,6 +910,7 @@ function syncCamPlaceholder() {
     const grid = activeGrid();
     if (!grid) return;
     let note = grid.querySelector(".cam-wait-note");
+    if (soloMode) { if (note) note.remove(); return; }
     if (!lkConnected && tiles.size === 0) {
         if (!note) {
             note = document.createElement("p");
